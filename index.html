@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>MARKETPLACE MUEY</title>
+
+<style>
+body {
+  font-family: Arial;
+  text-align: center;
+  background: #f5f5f5;
+}
+
+h1 {
+  background: black;
+  color: white;
+  padding: 15px;
+}
+
+.formulario input, select {
+  padding: 8px;
+  margin: 5px;
+}
+
+.producto {
+  background: white;
+  margin: 15px auto;
+  padding: 10px;
+  width: 250px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+
+#chat {
+  display:none;
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  background:white;
+  border:1px solid black;
+  padding:10px;
+  width:250px;
+}
+</style>
+
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <h2>Crear cuenta</h2>
+  <input type="text" id="user" placeholder="Usuario">
+  <input type="password" id="pass" placeholder="Contraseña">
+  <button onclick="registrar()">Registrarse</button>
+
+  <h2>Iniciar sesión</h2>
+  <input type="text" id="loginUser" placeholder="Usuario">
+  <input type="password" id="loginPass" placeholder="Contraseña">
+  <button onclick="loginUser()">Entrar</button>
+
+  <p id="mensaje"></p>
+</div>
+
+<!-- PLATAFORMA -->
+<div id="plataforma" style="display:none;">
+
+<h1>MARKETPLACE MUEY</h1>
+
+<div class="formulario">
+  <input type="text" id="nombre" placeholder="Producto">
+  <input type="text" id="precio" placeholder="Precio">
+  <input type="text" id="descripcion" placeholder="Descripción">
+  <input type="text" id="imagen" placeholder="URL de imagen">
+
+  <select id="categoria">
+    <option value="Productos">Productos</option>
+    <option value="Servicios">Servicios</option>
+  </select>
+
+  <button onclick="agregarProducto()">Publicar</button>
+</div>
+
+<h2>Filtrar</h2>
+<select onchange="filtrar(this.value)">
+  <option value="Todos">Todos</option>
+  <option value="Productos">Productos</option>
+  <option value="Servicios">Servicios</option>
+</select>
+
+<h2>Productos</h2>
+<div id="lista"></div>
+
+</div>
+
+<!-- CHAT -->
+<div id="chat">
+  <h3>Chat</h3>
+  <div id="mensajes" style="height:120px; overflow:auto; border:1px solid #ccc;"></div>
+
+  <input type="text" id="texto" placeholder="Mensaje">
+  <input type="file" id="img">
+
+  <br>
+  <button onclick="enviar()">Enviar</button>
+  <button onclick="cerrarChat()">Cerrar</button>
+</div>
+
+<script>
+
+// LOGIN
+function registrar(){
+  let u = document.getElementById("user").value.trim();
+  let p = document.getElementById("pass").value.trim();
+
+  localStorage.setItem("usuario", u);
+  localStorage.setItem("clave", p);
+
+  document.getElementById("mensaje").innerHTML = "Cuenta creada";
+}
+
+function loginUser(){
+  let u = document.getElementById("loginUser").value.trim();
+  let p = document.getElementById("loginPass").value.trim();
+
+  let userGuardado = localStorage.getItem("usuario");
+  let passGuardado = localStorage.getItem("clave");
+
+  if(u === userGuardado && p === passGuardado){
+    document.getElementById("login").style.display="none";
+    document.getElementById("plataforma").style.display="block";
+  } else {
+    document.getElementById("mensaje").innerHTML = "Datos incorrectos";
+  }
+}
+
+// PRODUCTOS (TU CÓDIGO ORIGINAL)
+let productos = JSON.parse(localStorage.getItem("productos")) || [];
+
+function guardar(){
+  localStorage.setItem("productos", JSON.stringify(productos));
+}
+
+function agregarProducto(){
+  let nombre = document.getElementById("nombre").value;
+  let precio = document.getElementById("precio").value;
+  let descripcion = document.getElementById("descripcion").value;
+  let imagen = document.getElementById("imagen").value;
+  let categoria = document.getElementById("categoria").value;
+
+  if(nombre === "" || precio === ""){
+    alert("Completa los datos");
+    return;
+  }
+
+  productos.push({
+    nombre, precio, descripcion, imagen, categoria,
+    fecha: new Date().toLocaleDateString()
+  });
+
+  guardar();
+  mostrar(productos);
+}
+
+function mostrar(listaProductos){
+  let lista = document.getElementById("lista");
+  lista.innerHTML = "";
+
+  listaProductos.forEach((p, index)=>{
+    let div = document.createElement("div");
+    div.className = "producto";
+
+    div.innerHTML = `
+      <strong>${p.nombre}</strong><br>
+      Precio: $${p.precio}<br>
+      ${p.descripcion}<br>
+      Categoría: ${p.categoria}<br>
+      Fecha: ${p.fecha}<br>
+      ${p.imagen ? `<img src="${p.imagen}" width="150">` : ""}
+      <br>
+      <button onclick="abrirChat()">Contactar</button>
+      <button onclick="eliminar(${index})">Eliminar</button>
+    `;
+
+    lista.appendChild(div);
+  });
+}
+
+function eliminar(index){
+  productos.splice(index,1);
+  guardar();
+  mostrar(productos);
+}
+
+function filtrar(categoria){
+  if(categoria === "Todos"){
+    mostrar(productos);
+  } else {
+    mostrar(productos.filter(p => p.categoria === categoria));
+  }
+}
+
+// CHAT
+function abrirChat(){
+  document.getElementById("chat").style.display="block";
+}
+
+function cerrarChat(){
+  document.getElementById("chat").style.display="none";
+}
+
+function enviar(){
+  let texto = document.getElementById("texto").value;
+  let archivo = document.getElementById("img").files[0];
+  let caja = document.getElementById("mensajes");
+
+  if(texto !== ""){
+    caja.innerHTML += "<p>"+texto+"</p>";
+  }
+
+  if(archivo){
+    let reader = new FileReader();
+    reader.onload = function(e){
+      caja.innerHTML += "<img src='"+e.target.result+"' width='80'><br>";
+    }
+    reader.readAsDataURL(archivo);
+  }
+
+  document.getElementById("texto").value="";
+}
+
+// INICIO
+mostrar(productos);
+
+</script>
+
+</body>
+</html>
